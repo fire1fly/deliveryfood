@@ -89,6 +89,7 @@ button:focus, input:focus {
     color: #595959;
     font-size: 16px;
     line-height: 24px;
+    transition: all 0.2s;
 }
 
 .button-back {
@@ -263,7 +264,13 @@ button:focus, input:focus {
 }
 
 .card-restaurant {
-    cursor: pointer
+    cursor: pointer;
+    transition: all .4s;
+}
+
+.card-restaurant:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 22px rgba(68, 49, 49, 0.35);
 }
 
 .card-image {
