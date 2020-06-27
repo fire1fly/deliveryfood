@@ -269,7 +269,7 @@ button:focus, input:focus {
 }
 
 .card-restaurant:hover {
-    transform: translateY(-5px);
+    transform: scale(1.03);
     box-shadow: 0 10px 22px rgba(68, 49, 49, 0.35);
 }
 

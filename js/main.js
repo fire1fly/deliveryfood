@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () =>{
   // DOM elements
   const cartButton = document.querySelector("#cart-button"),
-        modal = document.querySelector(".modal"),
+        modal = document.querySelector(".modal-cart"),
         btnCloseCart = document.querySelector(".close"),
         btnAuth = document.querySelector(".button-auth"),
         modalAuth = document.querySelector(".modal-auth"),
@@ -18,11 +18,15 @@ document.addEventListener('DOMContentLoaded', () =>{
         menuHeading = menuContainer.querySelector(".menu-heading"),
         logo = document.querySelector(".logo"),
         buttonBack = document.querySelector(".button-back"),
-        cardsMenu = document.querySelector(".cards-menu");
+        cardsMenu = document.querySelector(".cards-menu"),
+        modalBody = document.querySelector(".modal-body"),
+        totalPriceTag = modal.querySelector(".modal-pricetag"),
+        btnClearCart = modal.querySelector(".clear-cart");
 
   // data
 
   let login = localStorage.getItem('userLogin');
+  const cart = [];
 
   // functions
 
@@ -47,6 +51,31 @@ document.addEventListener('DOMContentLoaded', () =>{
     modalAuth.classList.toggle("is-open");
   };
 
+  const renderCart = () => {
+    modalBody.textContent = '';
+    totalPriceTag.textContent = '';
+    cart.forEach(({ id, title, price, count }) => {
+      const itemCart = `
+        <div class="food-row">
+					<span class="food-name">${title}</span>
+					<strong class="food-price">${price}</strong>
+					<div class="food-counter">
+						<button class="counter-button counter-minus" data-id="${id}">-</button>
+						<span class="counter">${count}</span>
+						<button class="counter-button counter-plus" data-id="${id}">+</button>
+					</div>
+        </div>`;
+      
+      modalBody.insertAdjacentHTML('afterbegin', itemCart);
+    });
+
+    const totalPrice = cart.reduce((result, item) => {
+      return result + (parseFloat(item.price) * item.count);
+    }, 0);
+
+    totalPriceTag.textContent = totalPrice + ' ₽';
+  };
+
   // Имитация авторизации
 
 
@@ -55,9 +84,9 @@ document.addEventListener('DOMContentLoaded', () =>{
     const logOut = () => {
       login = '';
       localStorage.removeItem('userLogin');
-      btnAuth.style.display = 'block';
+      btnAuth.style.display = 'flex';
       cartButton.style.display = '';
-      btnLogOut.style.display = 'none';
+      btnLogOut.style.display = '';
       fieldUserName.style.display = 'none';
 
       btnLogOut.removeEventListener("click", logOut);
@@ -69,10 +98,13 @@ document.addEventListener('DOMContentLoaded', () =>{
     fieldUserName.textContent = login;
 
     btnAuth.style.display = 'none';
-    btnLogOut.style.display = 'block';
-    cartButton.style.display = 'block';
-    fieldUserName.style.display = 'block';
-    cartButton.addEventListener("click", toggleCartModal);
+    btnLogOut.style.display = 'flex';
+    cartButton.style.display = 'flex';
+    fieldUserName.style.display = 'inline';
+    cartButton.addEventListener("click", () => {
+      renderCart();
+      toggleCartModal();
+    });
     btnLogOut.addEventListener("click", logOut);
   };
 
@@ -83,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () =>{
       if(!loginInput.value) {
         loginInput.style.background = '#DD5145';
         loginInput.value = 'Введите логин!';
-        loginInput.focus();
+        // loginInput.focus();
         loginInput.addEventListener("click", () => {
           loginInput.style.background = '';
           loginInput.value = '';
@@ -149,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () =>{
     buttonBack.removeEventListener("click", backToMainPage);
   };
 
-  const createCardGood = ({ name, description, price, image }) => {
+  const createCardGood = ({ id, name, description, price, image }) => {
     let card = document.createElement('div');
     card.className = 'card';
     card.insertAdjacentHTML('beforeend', `<img src="${image}" alt="${name}" class="card-image"/>
@@ -163,11 +195,11 @@ document.addEventListener('DOMContentLoaded', () =>{
                         </div>
                         <!-- /.card-info -->
                         <div class="card-buttons">
-                          <button class="button button-primary button-add-cart">
+                          <button class="button button-primary button-add-cart" data-product-id="${id}">
                             <span class="button-card-text">В корзину</span>
                             <span class="button-cart-svg"></span>
                           </button>
-                          <strong class="card-price-bold">${price} ₽</strong>
+                          <strong class="card-price card-price-bold">${price} ₽</strong>
                         </div>
                       </div>`);
     cardsMenu.insertAdjacentElement('beforeend', card);
@@ -206,7 +238,55 @@ document.addEventListener('DOMContentLoaded', () =>{
           createCardGood(products);
         });
       });
-      
+    }
+  };
+
+  const addToCart = event => {
+    const target = event.target;
+    const btnAddToCart = target.closest('.button-add-cart');
+    if (btnAddToCart) {
+      const card = btnAddToCart.closest('.card'),
+            title = card.querySelector('.card-title').textContent,
+            price = card.querySelector('.card-price').textContent,
+            id = card.querySelector('.button-add-cart').getAttribute('data-product-id');
+
+            const food = cart.find(elem => {
+              return elem.id === id;
+            });
+            
+            if (food) {
+              food.count += 1;
+            } else {
+              cart.push({
+                id,
+                title,
+                price,
+                count: 1
+              });
+            }
+            console.log(cart);
+    }
+  };
+
+  const changeCountFood = (event) => {
+    const target = event.target;
+    if(target.classList.contains('counter-minus')) {
+      const food = cart.find((item) => {
+        return item.id === target.dataset.id;
+      })
+      food.count--;
+      if (food.count === 0) {
+        cart.splice(cart.indexOf(food) ,1)
+      }
+      renderCart();
+    }
+
+    if(target.classList.contains('counter-plus')) {
+      const food = cart.find((item) => {
+        return item.id === target.dataset.id;
+      })
+      food.count++;
+      renderCart();
     }
   };
 
@@ -221,9 +301,15 @@ document.addEventListener('DOMContentLoaded', () =>{
     });
     
     // listeners
+    modalBody.addEventListener("click", changeCountFood);
+    btnClearCart.addEventListener("click", () => {
+      cart.lenght = 0;
+      renderCart();
+    });
     cardsRestaurants.addEventListener("click", openGoodsRestaurant);
-    btnCloseCart.addEventListener("click", toggleCartModal);
     logo.addEventListener("click", backToMainPage);
+    btnCloseCart.addEventListener("click", toggleCartModal);
+    cardsMenu.addEventListener("click", addToCart);
   }
 
   init();
